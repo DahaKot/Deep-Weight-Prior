@@ -1,0 +1,392 @@
+% Copyright 2004 by Till Tantau <tantau@users.sourceforge.net>.
+%
+% In principle, this file can be redistributed and/or modified under
+% the terms of the GNU Public License, version 2.
+%
+% However, this file is supposed to be a template to be modified
+% for your own needs. For this reason, if you use this file as a
+% template and not specifically distribute it as part of a another
+% package/program, I grant the extra permission to freely copy and
+% modify this file as you see fit and even to delete this copyright
+% notice. 
+
+
+\documentclass[19pt]{beamer}
+
+% There are many different themes available for Beamer. A comprehensive
+% list with examples is given here:
+% http://deic.uab.es/~iblanes/beamer_gallery/index_by_theme.html
+% You can uncomment the themes below if you would like to use a different
+% one:
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{boxes}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{default}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+\usepackage[T2A,T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage[normalem]{ulem}
+\usepackage{multicol}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+\usepackage{caption}
+\usepackage{animate}
+\usepackage{multimedia}
+
+\title{Deep Weight Prior}
+
+% A subtitle is optional and this may be deleted
+
+\author{Kotova Darya}
+% - Give the names in the same order as the appear in the paper.
+% - Use the \inst{?} command only if the authors have different
+%   affiliation.
+
+\institute[MIPT] % (optional, but mostly needed)
+
+% - Use the \inst command only if there are several affiliations.
+% - Keep it simple, no one is interested in your street address.
+
+\date{May, 2019}
+% - Either use conference name or its abbreviation.
+% - Not really informative to the audience, more for people (including
+%   yourself) who are reading the slides online
+
+\subject{}
+% This is only inserted into the PDF information catalog. Can be left
+% out. 
+
+% If you have a file called "university-logo-filename.xxx", where xxx
+% is a graphic format that can be processed by latex or pdflatex,
+% resp., then you can add a logo as follows:
+
+% \pgfdeclareimage[height=0.5cm]{university-logo}{university-logo-filename}
+% \logo{\pgfuseimage{university-logo}}
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+% \AtBeginSubsection[]
+% {
+%   \begin{frame}<beamer>{План}
+%     \tableofcontents[currentsection,currentsubsection]
+%   \end{frame}
+% }
+
+% Let's get started
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Contents}
+  \tableofcontents
+  % You might wish to add the option [pausesections]
+\end{frame}
+
+% Section and subsections will appear in the presentation overview
+% and table of contents.
+\section{Variational inference}
+
+%3
+\begin{frame}{Variational Inference: Problem}
+Goal: transform prior knowledge $p(w)$ to the posterior distribution $p(w \vert D)$ with Bayes rule:\\
+$$
+p(w \vert D) = \frac{p(D \vert w) p(w)}{p(D)}
+$$\\
+The problem is $p(D)$ is unknown $\rightarrow$ $p(w \vert D)$ is intractable. \\
+Then let's approximate $p(w \vert D)$ with $q_{\theta}(w)$.
+\end{frame}
+
+%4
+\begin{frame}{Variational lower bound}
+
+To make it we minimize KL-divergence:\\
+$$
+D_{KL}(q_{\theta}(w) \vert \vert p(w \vert D)) = \mathbb{E}_{q_{\theta}}log\frac{q_{\theta}(w)}{p(w \vert  D)} \rightarrow \min_{\theta}
+$$ 
+It is equivalent to \textbf{variational lower bound maximization}
+$$
+VLB := \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) \rightarrow \max_{\theta}
+$$
+\end{frame}
+
+\section{Reparametrisation trick}
+
+%5
+\begin{frame}{Reparametrisation trick}
+$$
+VLB = \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) \rightarrow \max_{\theta}
+$$
+
+$$ 
+\nabla_{\theta} \mathbb{E}_{q_{\theta}} \log p(D| w) = \int \nabla_{\theta} q_{\theta}(w) \log p(D \vert w)  \neq \mathbb{E}_{q_{\theta}} \nabla_{\theta} \log p(D \vert w)
+$$
+
+So we can not obtain unbiased gradients and perform mini-batching training. \\
+
+\end{frame}
+
+%6
+\begin{frame}{Reparametrisation trick}
+
+\textbf{Idea}:\\
+
+Let's represent $q_{\theta}$ as deterministic differentiable function $f(\theta, \epsilon)$.\\
+For example:\\
+$$
+\epsilon \sim \mathcal{N}(0, 1) \quad
+\xi \sim \mathcal{N}(\mu, \sigma^{2})
+$$
+$$
+\epsilon = \frac{\xi - \mu}{\sigma} \quad \xi = \mu + \sigma \cdot \epsilon 
+$$
+\\
+Now we can compute gradients of VLB, where instead of $q_{\theta}$ now is $f(\theta, \epsilon)$.
+
+\end{frame}
+
+%7
+%yes, once again intentionally
+\begin{frame}{Variational lower bound}
+
+To make it we minimize KL-divergence:\\
+$$
+D_{KL}(q_{\theta}(w) \vert \vert p(w \vert D)) = \mathbb{E}_{q_{\theta}}log\frac{q_{\theta}(w)}{p(w \vert  D)} \rightarrow \min_{\theta}
+$$ 
+It is equivalent to \textbf{variational lower bound maximization}
+$$
+VLB = \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) \rightarrow \max_{\theta}
+$$
+\end{frame}
+
+%8
+\begin{frame}{Prior distribution}
+
+We suggest that networks learned on the similar datasets will have similar kernel's structures in convolutional layers.\\
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.8\linewidth]{kernels.png}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+\end{frame}
+
+\section{Variational autoencoder}
+
+%9
+\begin{frame}{Variational autoencoder}
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.85\linewidth]{vae.png}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+It helps us to approximate $p(w)$, having weights from already learned networks.
+
+\end{frame}
+
+%10
+\begin{frame}{Variational inference with implicit prior distribution}
+
+However, we still do not have probability density function of p(w). \\
+VAE also helps to make auxilary bound for VLB:\\
+
+$$
+VLB = \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) = 
+$$
+$$
+\mathbb{E}_{q(w)} \mathbb{E}_{r(z \vert w)} (log\frac{p(w, z)}{r(z \vert w)}p(x \vert w) - log(q(w)) + \mathbb{E}_{q(w)}D_{KL}(r(z \vert w) \vert \vert p(z \vert w)) =
+$$
+$$
+= L^{aux} +  \mathbb{E}_{q(w)}D_{KL}(r(z \vert w) \vert \vert p(z \vert w)) \geq L^{aux}
+$$
+
+\end{frame}
+
+\section{Results}
+
+%11
+\begin{frame}{Results}
+
+Code and different examples are available on \url{https://github.com/DahaKot/Deep-Weight-Prior} \\
+
+\begin{itemize}
+    \item trained 100 CNNs on notMNIST
+    \item trained vae on source kernels
+    \item used samples from vae for CNN learned on MNIST
+    \item compare performance of CNNs with different initialization
+\end{itemize}
+
+\end{frame}
+
+%12
+\begin{frame}{Kernel examples}
+
+There are samples of the source kernels:\\
+
+\begin{figure}
+    \centering
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{sourcekernel1.jpg}
+        %\caption{A gull}
+        %\label{fig:gull}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+      %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{sourcekernel2.jpg}
+        % \caption{A tiger}
+        \label{fig:tiger}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{sourcekernel3.jpg}
+        % \caption{A mouse}
+        \label{fig:mouse}
+    \end{subfigure}
+     ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{sourcekernel4.jpg}
+        % \caption{A mouse}
+        \label{fig:mouse}
+    \end{subfigure}
+    %\caption{Source kernels}
+    \label{fig:animals}
+\end{figure}
+
+And kernels got from vae:\\
+
+\begin{figure}
+    \centering
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{vaekernel1.png}
+        %\caption{A gull}
+        %\label{fig:gull}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+      %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{vaekernel2.png}
+        % \caption{A tiger}
+        \label{fig:tiger}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{vaekernel3.png}
+        % \caption{A mouse}
+        \label{fig:mouse}
+    \end{subfigure}
+     ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+    %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}%[b]{0.1\textwidth}
+        \includegraphics[width=0.15\textwidth]{vaekernel4.png}
+        % \caption{A mouse}
+        \label{fig:mouse}
+    \end{subfigure}
+    %\caption{Source kernels}
+    \label{fig:animals}
+\end{figure}
+
+\end{frame}
+
+%13
+\begin{frame}{Latent space}
+
+Visualization of latent representations of convolutional filters
+for ConvNet on notMNIST:\\
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.65\linewidth]{latentspace.png}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+\end{frame}
+
+%14
+\begin{frame}{Performance comparation}
+
+The performance of convolutional network with two different priors: deep weight prior (dwp) and standard normal:\\
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.7\linewidth]{performance.png}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+\end{frame}
+
+\section{Conclusion}
+
+%15
+\begin{frame}{Conclusion}
+
+We considered a new way to initilize kernels of convolutional neural networks - deep weight prior:\\
+\begin{itemize}
+    \item Performs better than 'default' random initialization
+    \item Does not need as much memory and computations as initialization with already learned filters
+\end{itemize}
+
+\end{frame}
+ 
+%16
+\begin{frame}{Thank you for attention}
+ 
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.45\linewidth]{mem.png}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+\end{frame}
+
+%17
+\begin{frame}{(not sure which meme to choose)}
+ 
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.7\linewidth]{meme.jpg}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+\end{frame}
+
+\end{document}
+
+
