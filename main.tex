@@ -61,7 +61,7 @@
 
 % A subtitle is optional and this may be deleted
 
-\author{Kotova Darya}
+\author{Kotova Daria}
 % - Give the names in the same order as the appear in the paper.
 % - Use the \inst{?} command only if the authors have different
 %   affiliation.
@@ -104,6 +104,8 @@
 \end{frame}
 
 \begin{frame}{Contents}
+    Original research is available on: 
+    \url{https://openreview.net/pdf?id=ByGuynAct7}
   \tableofcontents
   % You might wish to add the option [pausesections]
 \end{frame}
@@ -114,22 +116,29 @@
 
 %3
 \begin{frame}{Variational Inference: Problem}
-Goal: transform prior knowledge $p(w)$ to the posterior distribution $p(w \vert D)$ with Bayes rule:\\
+
+$p(w)$ - prior knowledge of parameters $w$ of the model\\
+$D$ - dataset, which should be described by the model\\
+\\
+\textbf{Goal}: transform prior knowledge $p(w)$ to the posterior distribution $p(w \vert D)$ with Bayes rule:\\
 $$
 p(w \vert D) = \frac{p(D \vert w) p(w)}{p(D)}
 $$\\
-The problem is $p(D)$ is unknown $\rightarrow$ $p(w \vert D)$ is intractable. \\
-Then let's approximate $p(w \vert D)$ with $q_{\theta}(w)$.
+The problem is $p(D)$ is intractable $\rightarrow$ $p(w \vert D)$ is intractable. \\
+Moreover, we have no analytical expression for $p(w)$.\\
+
 \end{frame}
 
 %4
 \begin{frame}{Variational lower bound}
 
+Firstly, let's approximate $p(w \vert D)$ with proposal distribution $q_{\theta}(w)$. \\
 To make it we minimize KL-divergence:\\
 $$
 D_{KL}(q_{\theta}(w) \vert \vert p(w \vert D)) = \mathbb{E}_{q_{\theta}}log\frac{q_{\theta}(w)}{p(w \vert  D)} \rightarrow \min_{\theta}
 $$ 
-It is equivalent to \textbf{variational lower bound maximization}
+It is equivalent to \textbf{maximization of variational lower bound} of the marginal log-likelihood of the
+data :
 $$
 VLB := \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) \rightarrow \max_{\theta}
 $$
@@ -147,7 +156,7 @@ $$
 \nabla_{\theta} \mathbb{E}_{q_{\theta}} \log p(D| w) = \int \nabla_{\theta} q_{\theta}(w) \log p(D \vert w)  \neq \mathbb{E}_{q_{\theta}} \nabla_{\theta} \log p(D \vert w)
 $$
 
-So we can not obtain unbiased gradients and perform mini-batching training. \\
+So we can not obtain unbiased gradients and perform mini-batch training. \\
 
 \end{frame}
 
@@ -166,7 +175,7 @@ $$
 \epsilon = \frac{\xi - \mu}{\sigma} \quad \xi = \mu + \sigma \cdot \epsilon 
 $$
 \\
-Now we can compute gradients of VLB, where instead of $q_{\theta}$ now is $f(\theta, \epsilon)$.
+Now we can compute gradients of VLB, where instead of $q_{\theta}$ now is $f(\theta, \epsilon)$, since we take math expectation over $\epsilon$ but not $q_{\theta}$.
 
 \end{frame}
 
@@ -178,16 +187,19 @@ To make it we minimize KL-divergence:\\
 $$
 D_{KL}(q_{\theta}(w) \vert \vert p(w \vert D)) = \mathbb{E}_{q_{\theta}}log\frac{q_{\theta}(w)}{p(w \vert  D)} \rightarrow \min_{\theta}
 $$ 
-It is equivalent to \textbf{variational lower bound maximization}
+It is equivalent to \textbf{variational lower bound maximization}:
 $$
 VLB = \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) \rightarrow \max_{\theta}
 $$
+
+The second problem is that we do not have analytical expression for $p(w)$.
 \end{frame}
 
 %8
 \begin{frame}{Prior distribution}
 
-We suggest that networks learned on the similar datasets will have similar kernel's structures in convolutional layers.\\
+We suggest that networks learned on similar datasets will have similar kernel's structures in convolutional layers.\\
+That means that we can use kernels from already learned networks to approximate prior distribution $p(w)$.\\
 
 \begin{figure}
     \centering
@@ -205,27 +217,32 @@ We suggest that networks learned on the similar datasets will have similar kerne
 
 \begin{figure}
     \centering
-    \includegraphics[width = 0.85\linewidth]{vae.png}
+    \includegraphics[width = 0.85\linewidth]{vae.jpg}
     % \caption{Caption}
     \label{fig:my_label}
 \end{figure}
 
-It helps us to approximate $p(w)$, having weights from already learned networks.
-
+VAE does not give analytical expression of $p(w)$, but helps us to build upper bound for KL-divergence $D_{KL}(q_{\theta}(w) \vert \vert p(w))$.
 \end{frame}
 
 %10
 \begin{frame}{Variational inference with implicit prior distribution}
 
-However, we still do not have probability density function of p(w). \\
-VAE also helps to make auxilary bound for VLB:\\
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.7\linewidth]{vae.jpg}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+VAE helps to make auxilary bound for VLB, which can be optimized unlike VLB:\\
 
 $$
 VLB = \mathbb{E}_{q_{\theta}} \log p(D \vert w) - D_{KL}(q_{\theta}(w) \vert \vert p(w)) = 
 $$
-$$
-\mathbb{E}_{q(w)} \mathbb{E}_{r(z \vert w)} (log\frac{p(w, z)}{r(z \vert w)}p(x \vert w) - log(q(w)) + \mathbb{E}_{q(w)}D_{KL}(r(z \vert w) \vert \vert p(z \vert w)) =
-$$
+% $$
+% \mathbb{E}_{q(w)} \mathbb{E}_{r(z \vert w)} (log\frac{p(w, z)}{r(z \vert w)}p(x \vert w) - log(q(w)) + \mathbb{E}_{q(w)}D_{KL}(r(z \vert w) \vert \vert p(z \vert w)) =
+% $$
 $$
 = L^{aux} +  \mathbb{E}_{q(w)}D_{KL}(r(z \vert w) \vert \vert p(z \vert w)) \geq L^{aux}
 $$
@@ -237,18 +254,32 @@ $$
 %11
 \begin{frame}{Results}
 
-Code and different examples are available on \url{https://github.com/DahaKot/Deep-Weight-Prior} \\
+Code and different examples are available on: \url{https://github.com/DahaKot/Deep-Weight-Prior} \\
 
 \begin{itemize}
     \item trained 100 CNNs on notMNIST
     \item trained vae on source kernels
     \item used samples from vae for CNN learned on MNIST
-    \item compare performance of CNNs with different initialization
+    \item compared performance of CNNs with different initializations
 \end{itemize}
 
 \end{frame}
 
 %12
+\begin{frame}{Performance comparation}
+
+The performance of convolutional network with two different priors: deep weight prior (dwp) and xavier:\\
+
+\begin{figure}
+    \centering
+    \includegraphics[width = 0.65\linewidth]{performance100larger.png}
+    % \caption{Caption}
+    \label{fig:my_label}
+\end{figure}
+
+\end{frame}
+
+%13
 \begin{frame}{Kernel examples}
 
 There are samples of the source kernels:\\
@@ -321,69 +352,33 @@ And kernels got from vae:\\
 
 \end{frame}
 
-%13
-\begin{frame}{Latent space}
+% %14
+% \begin{frame}{Latent space}
 
-Visualization of latent representations of convolutional filters
-for ConvNet on notMNIST:\\
+% Visualization of latent representations of convolutional filters
+% for ConvNet on notMNIST:\\
 
-\begin{figure}
-    \centering
-    \includegraphics[width = 0.65\linewidth]{latentspace.png}
-    % \caption{Caption}
-    \label{fig:my_label}
-\end{figure}
+% \begin{figure}
+%     \centering
+%     \includegraphics[width = 0.65\linewidth]{latentspacelarger.png}
+%     % \caption{Caption}
+%     \label{fig:my_label}
+% \end{figure}
 
-\end{frame}
-
-%14
-\begin{frame}{Performance comparation}
-
-The performance of convolutional network with two different priors: deep weight prior (dwp) and standard normal:\\
-
-\begin{figure}
-    \centering
-    \includegraphics[width = 0.7\linewidth]{performance.png}
-    % \caption{Caption}
-    \label{fig:my_label}
-\end{figure}
-
-\end{frame}
+% \end{frame}
 
 \section{Conclusion}
 
 %15
 \begin{frame}{Conclusion}
 
-We considered a new way to initilize kernels of convolutional neural networks - deep weight prior:\\
+We considered article deep weight prior, which proposes modification of variational inference with implicit prior distribution $p(w)$:\\
+%add more 
 \begin{itemize}
-    \item Performs better than 'default' random initialization
-    \item Does not need as much memory and computations as initialization with already learned filters
+    \item Modify variational lower bound
+    \item To perform mini-batch training use reparametrisation trick
+    \item Perform better than 'default' random initialization
 \end{itemize}
-
-\end{frame}
- 
-%16
-\begin{frame}{Thank you for attention}
- 
-\begin{figure}
-    \centering
-    \includegraphics[width = 0.45\linewidth]{mem.png}
-    % \caption{Caption}
-    \label{fig:my_label}
-\end{figure}
-
-\end{frame}
-
-%17
-\begin{frame}{(not sure which meme to choose)}
- 
-\begin{figure}
-    \centering
-    \includegraphics[width = 0.7\linewidth]{meme.jpg}
-    % \caption{Caption}
-    \label{fig:my_label}
-\end{figure}
 
 \end{frame}
 
